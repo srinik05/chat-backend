@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 
 dotenv.config();
+const PORT = process.env.PORT || 3000;
 
 const app = express();
 app.get("/", (req, res) => {
@@ -15,7 +16,7 @@ app.get("/", (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3001"], // allow both ports
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://chat-frontend-gamma-three.vercel.app"], // allow both ports
     methods: ["GET", "POST"],
   },
 });
@@ -43,6 +44,6 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3000, () => {
-  console.log("🚀 Server running on http://localhost:3000");
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
