@@ -1,0 +1,39 @@
+>mkdir chat-app
+>cd chat-app
+
+>npm init -y
+Wrote to D:\working-apps\chatting_app\chat-app\package.json:
+
+{
+  "name": "chat-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
+
+
+
+
+>npm install express socket.io mongoose
+>node server.js
+>nslookup cluster0.mongodb.net
+Server:  XiaoQiang
+Address:  192.168.31.1
+
+*** XiaoQiang can't find cluster0.mongodb.net: Non-existent domain
+
+-----> updated wifi DNS details in windows with 8.8.8.8 and 8.8.4.4
+
+D:\working-apps\chatting_app\chat-app>nslookup cluster0.mongodb.net
+Server:  dns.google
+Address:  8.8.8.8
+
+>node server.js
+>npm install express mongoose socket.io dotenv cors
+>node server.js
