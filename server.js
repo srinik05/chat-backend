@@ -1,49 +1,72 @@
-// server.js
 import express from "express";
-import mongoose from "mongoose";
 import http from "http";
 import { Server } from "socket.io";
-import dotenv from "dotenv";
 import cors from "cors";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import authRoutes from "./routes/auth.js";
 
 dotenv.config();
-const PORT = process.env.PORT || 3000;
 
 const app = express();
-app.get("/", (req, res) => {
-  res.send("Chat app backend is running successfully 🚀");
-});
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://chat-frontend-gamma-three.vercel.app"], // allow both ports
-    methods: ["GET", "POST"],
-  },
-});
-
 app.use(cors());
 app.use(express.json());
 
-// Replace this with your connection string
-const MONGO_URI = "mongodb+srv://srinivas4in_db_user:asbf8lTWto0FVxYM@cluster0.9g4rt1v.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => console.log("✅ MongoDB connected"))
+  .catch(err => console.error(err));
 
-mongoose
-  .connect(MONGO_URI)
-  .then(() => console.log("✅ MongoDB connected successfully"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+// Routes
+app.use("/api/auth", authRoutes);
+
+// Chat server
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*", methods: ["GET", "POST"] }
+});
+
+const users = {};
 
 io.on("connection", (socket) => {
-  console.log("🟢 New user connected:", socket.id);
+  console.log(`New user connected: ${socket.id}`);
 
-  socket.on("chat message", (msg) => {
-    io.emit("chat message", msg);
+  socket.on("set username", ({ username, room }) => {
+    socket.username = username;
+    socket.room = room;
+    socket.join(room);
+
+    const joinMsg = {
+      username,
+      systemMessage: "joined the chat",
+      time: new Date().toLocaleTimeString(),
+      room,
+    };
+    io.to(room).emit("user joined", joinMsg);
   });
 
-  socket.on("disconnect", () => {
-    console.log("🔴 User disconnected:", socket.id);
+  socket.on("chat message", ({ username, room, message }) => {
+    io.to(room).emit("chat message", {
+      username,
+      room,
+      message,
+      time: new Date().toLocaleTimeString(),
+    });
+  });
+
+ socket.on("disconnect", () => {
+    if (socket.username && socket.room) {
+      const leaveMsg = {
+        username: socket.username,
+        systemMessage: "left the chat",
+        time: new Date().toLocaleTimeString(),
+        room: socket.room,
+      };
+      io.to(socket.room).emit("user left", leaveMsg);
+    }
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+server.listen(3000, () => console.log("🚀 Server running on port 3000"));
