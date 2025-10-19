@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   phone: { type: String },
   password: { type: String, required: true },
+  role: { type: String, default: "user" } // admin or user
 }, { timestamps: true });
 
 export default mongoose.model("User", userSchema);

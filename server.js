@@ -28,43 +28,60 @@ const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-const users = {};
+// Map to track connected users: username -> socket.id
+const connectedUsers = new Map();
 
 io.on("connection", (socket) => {
   console.log(`New user connected: ${socket.id}`);
 
-  socket.on("set username", ({ username, room }) => {
+  // Set username
+  socket.on("set username", ({ username }) => {
     socket.username = username;
-    socket.room = room;
-    socket.join(room);
-
-    const joinMsg = {
-      username,
-      systemMessage: "joined the chat",
-      time: new Date().toLocaleTimeString(),
-      room,
-    };
-    io.to(room).emit("user joined", joinMsg);
+    connectedUsers.set(username, socket.id);
+    console.log("Connected users:", Array.from(connectedUsers.keys()));
   });
 
-  socket.on("chat message", ({ username, room, message }) => {
-    io.to(room).emit("chat message", {
-      username,
-      room,
-      message,
-      time: new Date().toLocaleTimeString(),
+  // Join one-to-one chat room
+  socket.on("join chat", ({ fromUser, toUser }) => {
+    const room = [fromUser, toUser].sort().join("_"); // unique room per pair
+    socket.join(room);
+    socket.room = room;
+
+    // Optional: notify room users
+    io.to(room).emit("user joined", {
+      username: fromUser,
+      systemMessage: "joined the chat",
+      time: new Date().toLocaleTimeString()
     });
   });
 
- socket.on("disconnect", () => {
-    if (socket.username && socket.room) {
-      const leaveMsg = {
-        username: socket.username,
-        systemMessage: "left the chat",
-        time: new Date().toLocaleTimeString(),
-        room: socket.room,
-      };
-      io.to(socket.room).emit("user left", leaveMsg);
+  // Send message
+  socket.on("chat message", ({ fromUser, toUser, message }) => {
+    const time = new Date().toLocaleTimeString();
+    const msgData = { from: fromUser, to: toUser, message, time };
+
+    // ✅ Send to sender with self: true (right)
+    socket.emit("chat message", { ...msgData, self: true });
+
+    // ✅ Send to receiver with self: false (left)
+    const receiverSocketId = connectedUsers.get(toUser);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("chat message", { ...msgData, self: false });
+    }
+  });
+
+  // Handle disconnect
+  socket.on("disconnect", () => {
+    if (socket.username) {
+      connectedUsers.delete(socket.username);
+
+      if (socket.room) {
+        io.to(socket.room).emit("user left", {
+          username: socket.username,
+          systemMessage: "left the chat",
+          time: new Date().toLocaleTimeString()
+        });
+      }
     }
   });
 });
