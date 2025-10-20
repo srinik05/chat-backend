@@ -60,9 +60,8 @@ bash
 Copy code
 backend/
 ├── routes/          # API routes (auth, users)
-├── controllers/     # Controller logic
+├── sockets/         # Sockets logic
 ├── models/          # MongoDB models
-├── middleware/      # Authentication middleware
-├── utils/           # Helper functions
+├── routes/          # Authentication middleware
 ├── server.js        # Main entry point
 └── package.json
